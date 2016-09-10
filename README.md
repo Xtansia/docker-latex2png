@@ -30,7 +30,7 @@ $ cat << EOF >hello_world.tex
   Hello World
 \end{document}
 EOF
-$ curl -d @hello_world.tex -o hello_world.png 'http://<container_ip>:8080/'
+$ curl --data-binary @hello_world.tex -o hello_world.png 'http://<container_ip>:8080/'
 ```
 
 You can also directly execute latex2png within the container, piping the latex to stdin.
