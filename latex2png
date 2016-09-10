@@ -15,7 +15,7 @@ trap 'rm -rf "$tmp"' EXIT
 
 cd $tmp
 
-cat /dev/fd/0>job.latex
+cat > job.latex
 
 if timeout $TIMEOUT texfot pdflatex job.latex > job.error ; then
   pdftocairo -singlefile -png -r $IMGDPI -transp job.pdf
