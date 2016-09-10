@@ -8,50 +8,29 @@ License, v. 2.0. If a copy of the MPL was not distributed with this
 file, You can obtain one at https://mozilla.org/MPL/2.0/.
 """
 
-from http.server import BaseHTTPRequestHandler, HTTPServer
+
+from aiohttp import web
+import asyncio
 import subprocess
-import uuid
-
-class Latex2PNGRequestHandler(BaseHTTPRequestHandler):
-    def do_POST(self):
-        if self.path != '/':
-            self.send_response(404, message='Not Found')
-            self.send_header('Content-Type', 'text/plaintext')
-            self.end_headers()
-            self.wfile.write(b'Not Found')
-            return
-
-        length = int(self.headers['Content-Length'])
-        compl = subprocess.run(
-            'latex2png',
-            input=self.rfile.read(length),
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE)
-
-        if compl.returncode == 124:
-            self.send_response(408, message='Timed Out')
-            self.send_header('Content-Type', 'text/plaintext')
-            self.end_headers()
-            self.wfile.write(b'Timed Out')
-            return
-
-        if compl.returncode != 0:
-            self.send_response(400, message='LaTeX Error')
-            self.send_header('Content-Type', 'text/plaintext')
-            self.end_headers()
-            self.wfile.write(compl.stderr)
-            return
-
-        self.send_response(200)
-        self.send_header('Content-Type', 'image/png')
-        self.send_header('Content-Length', len(compl.stdout))
-        self.end_headers()
-        self.wfile.write(compl.stdout)
-        return
 
 
-print('Starting Server...')
-server_address = ('', 8080)
-httpd = HTTPServer(server_address, Latex2PNGRequestHandler)
-print('Running Server...')
-httpd.serve_forever()
+async def latex2png(request):
+  proc = await asyncio.create_subprocess_exec(
+      'latex2png',
+      stdin=subprocess.PIPE,
+      stdout=subprocess.PIPE,
+      stderr=subprocess.PIPE)
+
+  stdout, stderr = await proc.communicate(input=await request.read())
+
+  if proc.returncode == 0:
+    return web.Response(body=stdout, content_type='image/png')
+  elif proc.returncode == 124:
+    return web.Response(status=408, text='Timed Out')
+  else:
+    return web.Response(status=400, text=stderr.decode('UTF-8'))
+
+
+app = web.Application()
+app.router.add_route('POST', '/', latex2png)
+web.run_app(app)
