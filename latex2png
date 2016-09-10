@@ -1,0 +1,33 @@
+#!/usr/bin/env bash
+#
+# Copyright (c) 2016, Thomas Farr
+#
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at https://mozilla.org/MPL/2.0/.
+#
+
+TIMEOUT=10s
+IMGDPI=300
+
+tmp=$(mktemp -d)
+trap 'rm -rf "$tmp"' EXIT
+
+cd $tmp
+
+cat /dev/fd/0>job.latex
+
+if timeout $TIMEOUT texfot pdflatex job.latex > job.error ; then
+  pdftocairo -singlefile -png -r $IMGDPI -transp job.pdf
+  cat job.png
+  exit 0
+else
+  ret=$?
+  if [[ $ret == 124 ]]; then
+    echo 'Timed Out' >&2
+    exit 124
+  else
+    tail -n +3 job.error >&2
+    exit 1
+  fi
+fi
