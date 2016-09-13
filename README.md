@@ -54,7 +54,7 @@ $ cat << EOF >hello_world.tex
   Hello World
 \end{document}
 EOF
-$ docker exec -i latex2png latex2png < hello_world.tex > hello_world.png
+$ docker exec -i pngifier latex2png < hello_world.tex > hello_world.png
 ```
 
 ## Security
