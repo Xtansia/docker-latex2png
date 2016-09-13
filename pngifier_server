@@ -1,0 +1,43 @@
+#!/usr/bin/env python3
+
+"""
+Copyright (c) 2016, Thomas Farr
+
+This Source Code Form is subject to the terms of the Mozilla Public
+License, v. 2.0. If a copy of the MPL was not distributed with this
+file, You can obtain one at https://mozilla.org/MPL/2.0/.
+"""
+
+from aiohttp import web
+import asyncio
+import os
+import subprocess
+
+render_timeout = os.environ.get('RENDER_TIMEOUT', '10s')
+
+
+def pngifier_handler(pngifier_cmd):
+    async def pngifier(request):
+        process = await asyncio.create_subprocess_exec(
+            'timeout', render_timeout, pngifier_cmd,
+            stdin=subprocess.PIPE,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE)
+
+        stdout, stderr = await process.communicate(input=await request.read())
+
+        if process.returncode == 0:
+            return web.Response(body=stdout, content_type='image/png')
+        elif process.returncode == 124:
+            return web.Response(status=408, text='Timed Out')
+        else:
+            return web.Response(status=400, text=stderr.decode('utf8'))
+
+    return pngifier
+
+
+app = web.Application()
+app.router.add_route('POST', '/latex', pngifier_handler('latex2png'))
+app.router.add_route('POST', '/abc', pngifier_handler('abc2png'))
+app.router.add_route('POST', '/gnuplot', pngifier_handler('gnuplot2png'))
+web.run_app(app)

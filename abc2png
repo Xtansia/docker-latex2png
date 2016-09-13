@@ -8,16 +8,17 @@
 #
 
 job_name=$(uuidgen)
-work_dir="$HOME/.latex2png/$job_name"
+work_dir="$HOME/.abc2png/$job_name"
 mkdir -p $work_dir
 trap 'rm -rf "$work_dir"' EXIT
 
 cd $work_dir
 
-cat > $job_name.latex
+cat > $job_name.abc
 
-if texfot pdflatex $job_name.latex > $job_name.error \
-    && convert -density 576 $job_name.pdf -append -resize 50% $job_name.png 2> $job_name.error ; then
+if abcm2ps -S $job_name.abc -O $job_name.ps 2> $job_name.error \
+    && convert -density 576 $job_name.ps -append -trim -resize 50% \
+               -bordercolor transparent -border 10 $job_name.png 2> $job_name.error ; then
   cat $job_name.png
   exit 0
 else

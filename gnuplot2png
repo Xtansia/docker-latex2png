@@ -8,15 +8,17 @@
 #
 
 job_name=$(uuidgen)
-work_dir="$HOME/.latex2png/$job_name"
+work_dir="$HOME/.gnuplot2png/$job_name"
 mkdir -p $work_dir
 trap 'rm -rf "$work_dir"' EXIT
 
 cd $work_dir
 
-cat > $job_name.latex
+echo "set terminal pdfcairo enhanced color font 'Helvetica,14pt'" > $job_name.gnuplot
+echo "set output '$job_name.pdf'" >> $job_name.gnuplot
+cat | grep -Ev '^set (terminal|output)' >> $job_name.gnuplot
 
-if texfot pdflatex $job_name.latex > $job_name.error \
+if gnuplot < $job_name.gnuplot 2> $job_name.error \
     && convert -density 576 $job_name.pdf -append -resize 50% $job_name.png 2> $job_name.error ; then
   cat $job_name.png
   exit 0
